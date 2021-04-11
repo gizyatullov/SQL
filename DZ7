@@ -1,0 +1,17 @@
+-- 1. Составьте список пользователей users, которые осуществили хотя бы один заказ orders в интернет магазине.
+
+select * from users where id in (select distinct user_id from orders);
+
+-- 2. Выведите список товаров products и разделов catalogs, который соответствует товару.
+
+select id, name, catalog_id, (select name from catalogs where id = catalog_id) as 'catalog' from products where catalog_id = 1
+union
+select id, name, catalog_id, (select name from catalogs where id = catalog_id) as 'catalog'from products where catalog_id = 2
+union
+select id, name, catalog_id, (select name from catalogs where id = catalog_id) as 'catalog'from products where catalog_id is null;
+
+select id, name, (select name from catalogs where id = catalog_id) as 'catalog' from products;
+
+-- 3. (по желанию) Пусть имеется таблица рейсов flights (id, from, to) и таблица городов cities (label, name). Поля from, to и label содержат -- английские названия городов, поле name — русское. Выведите список рейсов flights с русскими названиями городов.
+
+select id, (select name from cities where _from = label) as _from, (select name from cities where _to = label) as _to from flights;
