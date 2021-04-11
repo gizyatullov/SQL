@@ -1,0 +1,25 @@
+-- Написать запросы, используя БД vk-db-data-full.sql, которые будут решать поставленные задачи:
+/*1. Пусть задан некоторый пользователь.
+Найдите человека, который больше всех общался с нашим пользователем, иначе, кто написал пользователю наибольшее число сообщений. (можете взять пользователя с любым id).
+(по желанию: можете найти друга, с которым пользователь больше всего общался)*/
+
+select id, from_user_id, to_user_id from messages where to_user_id = 1 order by from_user_id desc limit 1;
+
+select id, from_user_id, to_user_id from messages where from_user_id = 1 order by to_user_id desc limit 1;
+
+-- 2. Подсчитать общее количество лайков на посты, которые получили пользователи младше 18 лет.
+
+select count(user_id) as sum_likes from posts_likes where post_id in (select id from posts where user_id in (select user_id from profiles where TIMESTAMPDIFF(YEAR, birthday, NOW()) <= 18));
+
+-- 3. Определить, кто больше поставил лайков (всего) - мужчины или женщины?
+
+select (select count(user_id) from posts_likes where user_id in (select user_id from profiles where gender = 'm')) as man,
+(select count(user_id) from posts_likes where user_id in (select user_id from profiles where gender = 'f')) as woman;
+
+-- 4. (по желанию) Найти пользователя, который проявляет наименьшую активность в использовании социальной сети (тот, кто написал меньше всего -- сообщений, отправил меньше всего заявок в друзья, ...).
+
+-- написал меньше всего сообщений
+select from_user_id, count(from_user_id) as sum from messages group by from_user_id order by sum limit 1;
+
+-- отправил меньше всего заявок в друзья
+select from_user_id, count(from_user_id) as sum from friend_requests group by from_user_id order by sum limit 1;
