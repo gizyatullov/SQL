@@ -1,0 +1,31 @@
+-- 1. Составьте список пользователей users, которые осуществили хотя бы один заказ orders в интернет магазине.
+
+SELECT orders.user_id, users.name, COUNT(orders.user_id) AS total_orders, TIMESTAMPDIFF(YEAR, users.birthday_at, NOW()) AS age , orders.created_at, orders.updated_at
+FROM users
+    INNER JOIN
+        orders ON users.id = orders.user_id
+GROUP BY name, user_id;
+
+-- 2. Выведите список товаров products и разделов catalogs, который соответствует товару.
+
+select products.name AS product, catalogs.name AS product_type
+from products
+    INNER JOIN
+        catalogs ON products.catalog_id = catalogs.id
+UNION
+SELECT products.name AS product, products.catalog_id AS product_type
+FROM products
+WHERE catalog_id IS NULL;
+--------------------------
+select products.name AS product, catalogs.name AS product_type
+from products
+    LEFT JOIN
+        catalogs ON products.catalog_id = catalogs.id;
+
+-- 3. (по желанию) Пусть имеется таблица рейсов flights (id, from, to) и таблица городов cities (label, name). Поля from, to и label содержат -- английские названия городов, поле name — русское. Выведите список рейсов flights с русскими названиями городов.
+
+SELECT flights.id, c.name as 'ОТКУДА', c1.name as 'КУДА'
+    FROM flights
+        INNER JOIN cities c ON c.label = flights._from
+        INNER JOIN cities c1 ON c1.label = flights._to
+ORDER BY flights.id;
