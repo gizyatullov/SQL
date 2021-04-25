@@ -1,8 +1,10 @@
+-- Практическое задание по теме 'Транзакции, переменные, представления'
 -- 1. В базе данных shop и sample присутствуют одни и те же таблицы, учебной базы данных. Переместите запись id = 1 из таблицы shop.users в таблицу -- sample.users. Используйте транзакции.
 -- В базе данных shop и sample не одни и те же таблицы
 
 START TRANSACTION;
 INSERT INTO sample.users (SELECT id, name FROM shop.users WHERE shop.users.id = 1);
+DELETE FROM shop.users WHERE id = 1;
 COMMIT;
 
 -- 2. Создайте представление, которое выводит название name товарной позиции из таблицы products и соответствующее название каталога name из таблицы -- catalogs.
@@ -12,6 +14,7 @@ CREATE OR REPLACE VIEW my_view AS
     FROM products,catalogs
       WHERE products.catalog_id = catalogs.id;
 
+-- Практическое задание по теме 'Администрирование MySQL' (эта тема изучается по вашему желанию)
 -- 1. Создайте двух пользователей которые имеют доступ к базе данных shop. Первому пользователю shop_read должны быть доступны только запросы на
 -- чтение данных, второму пользователю shop — любые операции в пределах базы данных shop.
 
@@ -21,29 +24,46 @@ CREATE USER 'shop';
 GRANT ALL ON shop.* TO 'shop';
 SELECT Host, User FROM mysql.user;
 
+-- Практическое задание по теме 'Хранимые процедуры и функции, триггеры'
 -- 1. Создайте хранимую функцию hello(), которая будет возвращать приветствие, в зависимости от текущего времени суток. С 6:00 до 12:00 функция должна -- возвращать фразу "Доброе утро", с 12:00 до 18:00 функция должна возвращать фразу "Добрый день", с 18:00 до 00:00 — "Добрый вечер", с 00:00 до 6:00 -- — "Доброй ночи".
 
+DROP FUNCTION IF EXISTS hello;
 DELIMITER //
 CREATE FUNCTION hello() RETURNS TEXT DETERMINISTIC
 BEGIN
   RETURN CASE
-      WHEN '06:00' = CURTIME() AND CURTIME() < '12:00' THEN 'Доброе утро'
-      WHEN '12:00' = CURTIME() AND CURTIME() < '18:00' THEN 'Добрый день'
-      WHEN '18:00' = CURTIME() AND CURTIME() < '00:00' THEN 'Добрый вечер'
-      WHEN '00:00' = CURTIME() AND CURTIME() < '06:00' THEN 'Доброй ночи'
+      WHEN CURTIME() between '06:00' and '12:00' THEN 'Доброе утро'
+      WHEN CURTIME() between '12:00' and '18:00' THEN 'Добрый день'
+      WHEN CURTIME() between '18:00' and '00:00' THEN 'Добрый вечер'
+      WHEN CURTIME() between '00:00' and '06:00' THEN 'Доброй ночи'
       ELSE 'Ой все!!!'
     END;
 END //
 DELIMITER ;
 
+SELECT hello();
+
 -- 2. В таблице products есть два текстовых поля: name с названием товара и description с его описанием. Допустимо присутствие обоих полей или одно из -- них. Ситуация, когда оба поля принимают неопределенное значение NULL неприемлема. Используя триггеры, добейтесь того, чтобы одно из этих полей или -- оба поля были заполнены. При попытке присвоить полям NULL-значение необходимо отменить операцию.
 
-delimiter //
-CREATE TRIGGER error_null_trigger BEFORE INSERT ON products
+DROP TRIGGER IF EXISTS error_null_trigger_insert;
+DELIMITER //
+CREATE TRIGGER error_null_trigger_insert BEFORE INSERT ON products
 FOR EACH ROW
 BEGIN
 	IF(ISNULL(NEW.name) AND ISNULL(NEW.description)) THEN
 		SIGNAL SQLSTATE '42210' SET MESSAGE_TEXT = 'При попытке присвоить полям NULL-значение необходимо отменить операцию';
 	END IF;
 END //
-delimiter ;
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS error_null_trigger_update;
+DELIMITER //
+CREATE TRIGGER error_null_trigger_update BEFORE UPDATE ON products
+FOR EACH ROW
+BEGIN
+	IF(ISNULL(NEW.name) AND ISNULL(NEW.description)) THEN
+		SIGNAL SQLSTATE '42211' SET MESSAGE_TEXT = 'При попытке обновить полям NULL-значение необходимо отменить операцию';
+	END IF;
+END //
+DELIMITER ;
