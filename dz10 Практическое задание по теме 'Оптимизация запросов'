@@ -1,0 +1,61 @@
+-- 1. Создайте таблицу logs типа Archive. Пусть при каждом создании записи в таблицах users, catalogs и products в таблицу logs помещается время и дата создания -- записи, название таблицы, идентификатор первичного ключа и содержимое поля name.
+
+DROP TABLE IF EXISTS logs;
+CREATE TABLE logs (
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'время и дата создания записи',
+    name_table VARCHAR(200) COMMENT 'название таблицы',
+    id_fk INT UNSIGNED COMMENT 'идентификатор первичного ключа',
+    data_name VARCHAR(200) COMMENT 'содержимое поля name'
+) ENGINE=Archive;
+
+
+DROP TRIGGER IF EXISTS check_logs_users;
+DELIMITER //
+
+CREATE TRIGGER check_logs_users AFTER INSERT ON users
+FOR EACH ROW
+BEGIN
+    INSERT logs (created_at, name_table, id_fk, data_name)
+    VALUES (NEW.created_at, 'users', NEW.id, NEW.name);
+
+END //
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS check_logs_catalogs;
+DELIMITER //
+CREATE TRIGGER check_logs_catalogs AFTER INSERT ON catalogs
+FOR EACH ROW
+BEGIN
+	INSERT INTO logs (name_table, id_fk, data_name)
+	VALUES ('catalogs', NEW.id, NEW.name);
+END //
+DELIMITER ;
+
+
+DROP TRIGGER IF EXISTS check_logs_products;
+DELIMITER //
+CREATE TRIGGER check_logs_products AFTER INSERT ON products
+FOR EACH ROW
+BEGIN
+	INSERT INTO logs (created_at, name_table, id_fk, data_name)
+	VALUES (NEW.created_at, 'products', NEW.id, NEW.name);
+END //
+DELIMITER ;
+
+-- 2. (по желанию) Создайте SQL-запрос, который помещает в таблицу users миллион записей.
+
+DROP PROCEDURE IF EXISTS sp_lots_of_users;
+DELIMITER //
+CREATE PROCEDURE sp_lots_of_users(IN number_of_iterations INT UNSIGNED)
+BEGIN
+	DECLARE count_users INT DEFAULT 1;
+	WHILE number_of_iterations > 0 DO
+		INSERT users(name, birthday_at) VALUES (CONCAT('user_№_', count_users), NOW());
+		SET count_users = count_users + 1;
+		SET number_of_iterations = number_of_iterations - 1;
+	END WHILE;
+END //
+DELIMITER ;
+
+CALL sp_lots_of_users(1000000); -- выполнение займет более 30 минут
